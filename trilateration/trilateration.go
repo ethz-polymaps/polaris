@@ -20,6 +20,7 @@ type (
 	}
 )
 
+// Trilaterate calculates the position and accuracy of a device based on trilateration
 func Trilaterate(measurements []Measurement) (loc trilop.Position, accuracy float64, err error) {
 
 	if len(measurements) < 1 || len(measurements) > 3 {
