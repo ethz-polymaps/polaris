@@ -1,6 +1,6 @@
 test:
 	go clean -testcache
-	go test ./...
+	go test ./... -race
 
 lint:
 	golangci-lint run
