@@ -3,6 +3,7 @@ package trilateration
 import (
 	"testing"
 
+	"github.com/ethz-polymaps/trilop/distance"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,10 +16,30 @@ func TestTrilaterate(t *testing.T) {
 		{Lat: 47.41330944456364, Lon: 8.536520373280595, Distance: 1.4839817889675653, Weight: 1.0},
 	}
 
-	loc, accuracy, err := Trilaterate(measurements)
-	require.NoError(t, err)
+	t.Run("haversine", func(t *testing.T) {
 
-	assert.InDelta(t, 8.536464538143443, loc.Longitude, 0.0000000000009)
-	assert.InDelta(t, 47.413276910646324, loc.Latitude, 0.0000000000009)
-	assert.InDelta(t, 2.637536791157061, accuracy, 0.0000000000009)
+		tri := NewTrilaterator()
+
+		loc, accuracy, err := tri.Trilaterate(measurements)
+		require.NoError(t, err)
+
+		assert.InDelta(t, 47.413276910646324, loc.Latitude, 0.0000000000009)
+		assert.InDelta(t, 8.536464538143443, loc.Longitude, 0.0000000000009)
+		assert.InDelta(t, 2.637536791157061, accuracy, 0.0000000000009)
+
+	})
+
+	t.Run("vincenty", func(t *testing.T) {
+
+		tri := NewTrilaterator(WithDistanceFunc(distance.VincentyDistance))
+
+		loc, accuracy, err := tri.Trilaterate(measurements)
+		require.NoError(t, err)
+
+		assert.InDelta(t, 47.4132769158433, loc.Latitude, 0.0000000009)
+		assert.InDelta(t, 8.536464546559099, loc.Longitude, 0.0000000009)
+		assert.InDelta(t, 2.639501187168186, accuracy, 0.0000000009)
+
+	})
+
 }

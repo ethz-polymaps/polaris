@@ -2,12 +2,13 @@ package trilateration
 
 import (
 	"errors"
+	"fmt"
 	"math"
 
+	"github.com/ethz-polymaps/trilop/distance"
 	"gonum.org/v1/gonum/optimize"
 
 	"github.com/ethz-polymaps/trilop"
-	"github.com/ethz-polymaps/trilop/distance"
 )
 
 type (
@@ -18,13 +19,39 @@ type (
 		Distance float64
 		Weight   float64
 	}
+
+	DistanceFunc    func(a, b trilop.Position) float64
+	TrilateratorOpt func(*TrilateratorConfig)
+	Trilaterator    struct {
+		config *TrilateratorConfig
+	}
+	TrilateratorConfig struct {
+		DistanceFunc    DistanceFunc
+		MinMeasurements int
+	}
 )
 
-// Trilaterate calculates the position and accuracy of a device based on trilateration
-func Trilaterate(measurements []Measurement) (loc trilop.Position, accuracy float64, err error) {
+func NewTrilaterator(opts ...TrilateratorOpt) *Trilaterator {
 
-	if len(measurements) < 1 || len(measurements) > 3 {
-		return trilop.EmptyPosition, 0, errors.New("must provide 1-3 measurements")
+	config := &TrilateratorConfig{
+		DistanceFunc:    distance.HaversineDistance,
+		MinMeasurements: 3,
+	}
+
+	for _, opt := range opts {
+		opt(config)
+	}
+
+	return &Trilaterator{
+		config: config,
+	}
+}
+
+// Trilaterate calculates the position and accuracy of a device based on trilateration
+func (t *Trilaterator) Trilaterate(measurements []Measurement) (loc trilop.Position, accuracy float64, err error) {
+
+	if len(measurements) < 1 || len(measurements) > t.config.MinMeasurements {
+		return trilop.EmptyPosition, 0, fmt.Errorf("must provide 1-%d measurements", t.config.MinMeasurements)
 	}
 
 	if len(measurements) == 1 {
@@ -59,8 +86,8 @@ func Trilaterate(measurements []Measurement) (loc trilop.Position, accuracy floa
 			lat, lon := x[0], x[1]
 			var sum float64
 			for _, measurement := range measurements {
-				// Calculate distance between current point and measurement
-				d := distance.Calculate(trilop.NewPosition(lat, lon), trilop.NewPosition(measurement.Lat, measurement.Lon))
+				// HaversineDistance distance between current point and measurement
+				d := t.config.DistanceFunc(trilop.NewPosition(lat, lon), trilop.NewPosition(measurement.Lat, measurement.Lon))
 				// Weighted square error
 				diff := d - measurement.Distance
 				sum += measurement.Weight * diff * diff

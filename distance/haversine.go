@@ -6,8 +6,8 @@ import (
 	"github.com/ethz-polymaps/trilop"
 )
 
-// Calculate calculates the distance between two points on Earth
-func Calculate(a, b trilop.Position) float64 {
+// HaversineDistance calculates the distance between two points on Earth
+func HaversineDistance(a, b trilop.Position) float64 {
 	const R = 6371000 // Earth radius in meters
 
 	lat1Rad := a.Latitude * math.Pi / 180
